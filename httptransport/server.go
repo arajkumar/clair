@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 
+	notifier "github.com/quay/clair/v4/notifier/service"
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/plugin/othttp"
@@ -24,8 +25,13 @@ const (
 	VulnerabilityReportPath = apiRoot + "vulnerability_report/"
 	IndexAPIPath            = apiRoot + "index_report"
 	IndexReportAPIPath      = apiRoot + "index_report/"
-	StateAPIPath            = apiRoot + "index_state"
-	UpdatesAPIPath          = internalRoot + "updates/"
+	IndexStateAPIPath       = apiRoot + "index_state"
+	NotificationAPIPath     = apiRoot + "notification/"
+	KeysAPIPath             = apiRoot + "services/notifier/keys"
+	KeyByIDAPIPath          = apiRoot + "services/notifier/keys/"
+	AffectedManifestAPIPath = internalRoot + "affected_manifest/"
+	UpdateOperationAPIPath  = internalRoot + "update_operation/"
+	UpdateDiffAPIPath       = internalRoot + "update_diff/"
 	OpenAPIV1Path           = "/openapi/v1"
 )
 
@@ -40,10 +46,11 @@ type Server struct {
 	*http.ServeMux
 	indexer  indexer.Service
 	matcher  matcher.Service
+	notifier notifier.Service
 	traceOpt othttp.Option
 }
 
-func New(ctx context.Context, conf config.Config, indexer indexer.Service, matcher matcher.Service) (*Server, error) {
+func New(ctx context.Context, conf config.Config, indexer indexer.Service, matcher matcher.Service, notifier notifier.Service) (*Server, error) {
 	log := zerolog.Ctx(ctx).With().
 		Str("component", "init/NewHttpTransport").
 		Logger()
@@ -62,10 +69,11 @@ func New(ctx context.Context, conf config.Config, indexer indexer.Service, match
 		ServeMux: mux,
 		indexer:  indexer,
 		matcher:  matcher,
+		notifier: notifier,
 		traceOpt: othttp.WithTracer(global.TraceProvider().Tracer("clair")),
 	}
 
-	if err := t.configureDiscovery(); err != nil {
+	if err := t.configureDiscovery(ctx); err != nil {
 		log.Warn().Err(err).Msg("configuring openapi discovery failed")
 	} else {
 		log.Info().Str("path", OpenAPIV1Path).Msg("openapi discovery configured")
@@ -74,25 +82,22 @@ func New(ctx context.Context, conf config.Config, indexer indexer.Service, match
 	var e error
 	switch conf.Mode {
 	case config.ComboMode:
-		e = t.configureComboMode()
-		if e != nil {
-			return nil, e
-		}
-		e = t.configureUpdateEndpoints()
+		e = t.configureComboMode(ctx)
 		if e != nil {
 			return nil, e
 		}
 	case config.IndexerMode:
-		e = t.configureIndexerMode()
+		e = t.configureIndexerMode(ctx)
 		if e != nil {
 			return nil, e
 		}
 	case config.MatcherMode:
-		e = t.configureMatcherMode()
+		e = t.configureMatcherMode(ctx)
 		if e != nil {
 			return nil, e
 		}
-		e = t.configureUpdateEndpoints()
+	case config.NotifierMode:
+		e = t.configureNotifierMode(ctx)
 		if e != nil {
 			return nil, e
 		}
@@ -104,7 +109,7 @@ func New(ctx context.Context, conf config.Config, indexer indexer.Service, match
 	// add endpoint authentication if configured add auth. must happen after
 	// mux was configured for given mode.
 	if conf.Auth.Any() {
-		err := t.configureWithAuth()
+		err := t.configureWithAuth(ctx)
 		if err != nil {
 			log.Warn().Err(err).Msg("received error configuring auth middleware")
 		}
@@ -115,7 +120,7 @@ func New(ctx context.Context, conf config.Config, indexer indexer.Service, match
 
 // configureDiscovery() creates a discovery handler
 // for serving the v1 open api specification
-func (t *Server) configureDiscovery() error {
+func (t *Server) configureDiscovery(_ context.Context) error {
 	h := intromw.Handler(
 		othttp.NewHandler(
 			DiscoveryHandler(),
@@ -129,58 +134,29 @@ func (t *Server) configureDiscovery() error {
 }
 
 // configureDevMode configures the HttpTrasnport for
-// DevMode.
+// ComboMode.
 //
 // This mode runs both Indexer and Matcher in a single process.
-func (t *Server) configureComboMode() error {
+func (t *Server) configureComboMode(ctx context.Context) error {
 	// requires both indexer and matcher services
 	if t.indexer == nil || t.matcher == nil {
-		return clairerror.ErrNotInitialized{"DevMode requires both indexer and macher services"}
+		return clairerror.ErrNotInitialized{"Combo mode requires both indexer and macher services"}
 	}
 
-	// vulnerability report handler register
-	vulnReportH := intromw.Handler(
-		othttp.NewHandler(
-			VulnerabilityReportHandler(t.matcher, t.indexer),
-			VulnerabilityReportPath,
-			t.traceOpt,
-		),
-		VulnerabilityReportPath,
-	)
-	t.Handle(VulnerabilityReportPath, othttp.WithRouteTag(VulnerabilityReportPath, vulnReportH))
+	err := t.configureIndexerMode(ctx)
+	if err != nil {
+		return clairerror.ErrNotInitialized{"could not configure indexer: " + err.Error()}
+	}
 
-	// indexer handler register
-	indexH := intromw.Handler(
-		othttp.NewHandler(
-			IndexHandler(t.indexer),
-			IndexAPIPath,
-			t.traceOpt,
-		),
-		IndexAPIPath,
-	)
-	t.Handle(IndexAPIPath, othttp.WithRouteTag(IndexAPIPath, indexH))
+	err = t.configureMatcherMode(ctx)
+	if err != nil {
+		return clairerror.ErrNotInitialized{"could not configure matcher: " + err.Error()}
+	}
 
-	// index report handler register
-	indexReportH := intromw.Handler(
-		othttp.NewHandler(
-			IndexReportHandler(t.indexer),
-			IndexReportAPIPath,
-			t.traceOpt,
-		),
-		IndexReportAPIPath,
-	)
-	t.Handle(IndexReportAPIPath, othttp.WithRouteTag(IndexReportAPIPath, indexReportH))
-
-	// state handler register
-	stateH := intromw.Handler(
-		othttp.NewHandler(
-			StateHandler(t.indexer),
-			StateAPIPath,
-			t.traceOpt,
-		),
-		StateAPIPath,
-	)
-	t.Handle(StateAPIPath, othttp.WithRouteTag(StateAPIPath, stateH))
+	err = t.configureNotifierMode(ctx)
+	if err != nil {
+		return clairerror.ErrNotInitialized{"could not configure notifier: " + err.Error()}
+	}
 
 	return nil
 }
@@ -188,13 +164,24 @@ func (t *Server) configureComboMode() error {
 // configureIndexerMode configures the HttpTransport for IndexerMode.
 //
 // This mode runs only an Indexer in a single process.
-func (t *Server) configureIndexerMode() error {
+func (t *Server) configureIndexerMode(_ context.Context) error {
 	// requires only indexer service
 	if t.indexer == nil {
 		return clairerror.ErrNotInitialized{"IndexerMode requires an indexer service"}
 	}
 
-	// indexer handler register
+	// affected manifest handler register
+	affectedH := intromw.Handler(
+		othttp.NewHandler(
+			AffectedManifestHandler(t.indexer),
+			AffectedManifestAPIPath,
+			t.traceOpt,
+		),
+		AffectedManifestAPIPath,
+	)
+	t.Handle(AffectedManifestAPIPath, othttp.WithRouteTag(AffectedManifestAPIPath, affectedH))
+
+	// index handler register
 	indexH := intromw.Handler(
 		othttp.NewHandler(
 			IndexHandler(t.indexer),
@@ -216,22 +203,22 @@ func (t *Server) configureIndexerMode() error {
 	)
 	t.Handle(IndexReportAPIPath, othttp.WithRouteTag(IndexReportAPIPath, indexReportH))
 
-	// state handler register
+	// index state handler register
 	stateH := intromw.Handler(
 		othttp.NewHandler(
-			StateHandler(t.indexer),
-			StateAPIPath,
+			IndexStateHandler(t.indexer),
+			IndexStateAPIPath,
 			t.traceOpt,
 		),
-		StateAPIPath,
+		IndexStateAPIPath,
 	)
-	t.Handle(StateAPIPath, othttp.WithRouteTag(StateAPIPath, stateH))
+	t.Handle(IndexStateAPIPath, othttp.WithRouteTag(IndexStateAPIPath, stateH))
 
 	return nil
 }
 
 // configureMatcherMode configures HttpTransport
-func (t *Server) configureMatcherMode() error {
+func (t *Server) configureMatcherMode(_ context.Context) error {
 	// requires both an indexer and matcher service. indexer service
 	// is assumed to be a remote call over the network
 	if t.indexer == nil || t.matcher == nil {
@@ -249,20 +236,76 @@ func (t *Server) configureMatcherMode() error {
 	)
 	t.Handle(VulnerabilityReportPath, othttp.WithRouteTag(VulnerabilityReportPath, vulnReportH))
 
+	// update operation handler register
+	opH := intromw.Handler(
+		othttp.NewHandler(
+			UpdateOperationHandler(t.matcher),
+			UpdateOperationAPIPath,
+			t.traceOpt,
+		),
+		UpdateOperationAPIPath,
+	)
+	t.Handle(UpdateOperationAPIPath, othttp.WithRouteTag(UpdateOperationAPIPath, opH))
+
+	// update diff handler register
+	diffH := intromw.Handler(
+		othttp.NewHandler(
+			UpdateDiffHandler(t.matcher),
+			UpdateDiffAPIPath,
+			t.traceOpt,
+		),
+		UpdateDiffAPIPath,
+	)
+	t.Handle(UpdateDiffAPIPath, othttp.WithRouteTag(UpdateDiffAPIPath, diffH))
+
 	return nil
 }
 
-func (t *Server) configureUpdateEndpoints() error {
-	if t.matcher == nil {
-		return clairerror.ErrNotInitialized{"matcher service required for update inspection endpoints"}
+// configureMatcherMode configures HttpTransport
+func (t *Server) configureNotifierMode(ctx context.Context) error {
+	// requires both an indexer and matcher service. indexer service
+	// is assumed to be a remote call over the network
+	if t.notifier == nil {
+		return clairerror.ErrNotInitialized{"NotifierMode requires a notifier service"}
 	}
 
-	h, err := UpdateDiffHandler(t.matcher)
-	if err != nil {
-		return err
+	// notifications callback handler
+	callbackH := intromw.Handler(
+		othttp.NewHandler(
+			NotificationHandler(t.notifier),
+			NotificationAPIPath,
+			t.traceOpt,
+		),
+		NotificationAPIPath,
+	)
+	t.Handle(NotificationAPIPath, othttp.WithRouteTag(NotificationAPIPath, callbackH))
+
+	ks := t.notifier.KeyStore(ctx)
+	if ks == nil {
+		return clairerror.ErrNotInitialized{"NotifierMode requires the notifier to provide a non-nil key store"}
 	}
-	wh := intromw.Handler(othttp.NewHandler(h, UpdatesAPIPath, t.traceOpt), UpdatesAPIPath)
-	t.ServeMux.Handle(UpdatesAPIPath, othttp.WithRouteTag(UpdatesAPIPath, wh))
+
+	// keys handler
+	keysH := intromw.Handler(
+		othttp.NewHandler(
+			KeysHandler(ks),
+			KeysAPIPath,
+			t.traceOpt,
+		),
+		KeysAPIPath,
+	)
+	t.Handle(KeysAPIPath, othttp.WithRouteTag(KeysAPIPath, keysH))
+
+	// key by ID handler
+	keyByIDH := intromw.Handler(
+		othttp.NewHandler(
+			KeyByIDHandler(ks),
+			KeyByIDAPIPath,
+			t.traceOpt,
+		),
+		KeyByIDAPIPath,
+	)
+	t.Handle(KeyByIDAPIPath, othttp.WithRouteTag(KeyByIDAPIPath, keyByIDH))
 
 	return nil
 }
@@ -275,7 +318,7 @@ const IntraserviceIssuer = `clair-intraservice`
 // in an Auth middleware handler.
 //
 // must be ran after the config*Mode method of choice.
-func (t *Server) configureWithAuth() error {
+func (t *Server) configureWithAuth(_ context.Context) error {
 	// Keep this ordered "best" to "worst".
 	switch {
 	case t.conf.Auth.Keyserver != nil:
@@ -310,7 +353,19 @@ func (t *Server) configureWithAuth() error {
 	return nil
 }
 
-// WriterError is a helper that closes over an error that may be returned after
+// unmodified determines whether to return a conditonal response
+func unmodified(r *http.Request, v string) bool {
+	if vs, ok := r.Header["If-None-Match"]; ok {
+		for _, rv := range vs {
+			if rv == v {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// writerError is a helper that closes over an error that may be returned after
 // writing a response body starts.
 //
 // The normal error flow can't be used, because the HTTP status code will have

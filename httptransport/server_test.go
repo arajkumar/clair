@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/quay/claircore"
 	"github.com/quay/claircore/libvuln/driver"
+	"github.com/quay/claircore/test/log"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/plugin/othttp"
 )
@@ -28,31 +29,42 @@ func newTestMatcher() *testMatcher {
 		},
 		differ: differ{
 			delete:     func(context.Context, ...uuid.UUID) error { return nil },
-			latest:     func(context.Context) (uuid.UUID, error) { return uuid.Nil, nil },
-			latestOps:  func(context.Context) (map[string]uuid.UUID, error) { return nil, nil },
+			ops:        func(context.Context, ...string) (map[string][]driver.UpdateOperation, error) { return nil, nil },
+			latestOp:   func(context.Context) (uuid.UUID, error) { return uuid.Nil, nil },
+			latestOps:  func(context.Context) (map[string][]driver.UpdateOperation, error) { return nil, nil },
 			updateDiff: func(context.Context, uuid.UUID, uuid.UUID) (*driver.UpdateDiff, error) { return nil, nil },
 		},
 	}
 }
 
-type scanner struct {
-	scan func(context.Context, *claircore.IndexReport) (*claircore.VulnerabilityReport, error)
-}
-
-func (s *scanner) Scan(ctx context.Context, ir *claircore.IndexReport) (*claircore.VulnerabilityReport, error) {
-	return s.scan(ctx, ir)
+func newTestIndexer() *indexerMock {
+	return &indexerMock{
+		index: func(ctx context.Context, manifest *claircore.Manifest) (*claircore.IndexReport, error) {
+			return nil, nil
+		},
+		report: func(ctx context.Context, digest claircore.Digest) (*claircore.IndexReport, bool, error) {
+			return nil, true, nil
+		},
+		state: func(ctx context.Context) (string, error) { return "", nil },
+		affected: func(ctx context.Context, vulns []claircore.Vulnerability) (claircore.AffectedManifests, error) {
+			return claircore.NewAffectedManifests(), nil
+		},
+	}
 }
 
 // TestUpdateEndpoints registers the handlers and tests that they're registered
 // at the correct endpoint.
 func TestUpdateEndpoints(t *testing.T) {
 	m := newTestMatcher()
+	i := newTestIndexer()
 	s := &Server{
 		matcher:  m,
+		indexer:  i,
 		ServeMux: http.NewServeMux(),
 		traceOpt: othttp.WithTracer(global.TraceProvider().Tracer("clair")),
 	}
-	if err := s.configureUpdateEndpoints(); err != nil {
+	ctx := log.TestLogger(context.Background(), t)
+	if err := s.configureMatcherMode(ctx); err != nil {
 		t.Error(err)
 	}
 
@@ -62,7 +74,7 @@ func TestUpdateEndpoints(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	u.Path = path.Join(u.Path, internalRoot, "updates", "")
+	u.Path = path.Join(u.Path, UpdateOperationAPIPath, "")
 	t.Log(u)
 
 	res, err := srv.Client().Get(u.String())

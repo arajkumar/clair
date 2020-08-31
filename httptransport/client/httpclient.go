@@ -4,21 +4,59 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"sync"
 	"sync/atomic"
+
+	"github.com/quay/claircore/libvuln/driver"
 )
 
-// HTTP implements access to clair interfaces over HTTP
-type HTTP = *httpClient
+// uoCache caches an UpdateOperation
+// map when the server provides a conditional
+// response
+type uoCache struct {
+	sync.RWMutex
+	validator string
+	uo        map[string][]driver.UpdateOperation
+}
 
-// httpClient has this weird two-step where it's an unexported type and an
-// exported alias so that we can return something that's impossible for another
-// package to construct, but is still a concrete type.
+// Set persists the update operations map and it's associated
+// validator string used in conditional requests.
 //
-// This has the small rub that all the methods need to be defined on the
-// exported alias so they appear correctly in the documentation.
-type httpClient struct {
-	addr *url.URL
-	c    *http.Client
+// It is safe for concurrent use.
+func (c *uoCache) Set(m map[string][]driver.UpdateOperation, v string) {
+	c.Lock()
+	defer c.Unlock()
+	c.uo = m
+	c.validator = v
+}
+
+// Copy returns a copy of the cache contents to the caller.
+//
+// It is safe for concurrent use.
+func (c *uoCache) Copy() map[string][]driver.UpdateOperation {
+	m := map[string][]driver.UpdateOperation{}
+	c.RLock()
+	defer c.RUnlock()
+	for u, ops := range c.uo {
+		o := make([]driver.UpdateOperation, len(ops), len(ops))
+		copy(o, ops)
+		m[u] = o
+	}
+	return m
+}
+
+func newOUCache() *uoCache {
+	return &uoCache{
+		RWMutex: sync.RWMutex{},
+	}
+}
+
+// HTTP implements access to clair interfaces over HTTP
+type HTTP struct {
+	addr          *url.URL
+	c             *http.Client
+	uoCache       *uoCache
+	uoLatestCache *uoCache
 
 	diffValidator atomic.Value
 }
@@ -30,28 +68,30 @@ type httpClient struct {
 const DefaultAddr = `http://clair:6060/`
 
 // NewHTTP is a constructor for an HTTP client.
-func NewHTTP(ctx context.Context, opt ...Option) (HTTP, error) {
+func NewHTTP(ctx context.Context, opt ...Option) (*HTTP, error) {
 	addr, err := url.Parse(DefaultAddr)
 	if err != nil {
 		panic("programmer error") // Why didn't the DefaultAddr parse?
 	}
 
-	c := httpClient{
-		addr: addr,
-		c:    http.DefaultClient,
+	c := &HTTP{
+		addr:          addr,
+		c:             http.DefaultClient,
+		uoCache:       newOUCache(),
+		uoLatestCache: newOUCache(),
 	}
 	c.diffValidator.Store("")
 
 	for _, o := range opt {
-		if err := o(&c); err != nil {
+		if err := o(c); err != nil {
 			return nil, err
 		}
 	}
-	return &c, nil
+	return c, nil
 }
 
 // Option sets an option on an HTTP.
-type Option func(HTTP) error
+type Option func(*HTTP) error
 
 // WithAddr sets the address to talk to.
 //
@@ -61,7 +101,7 @@ type Option func(HTTP) error
 // The provided URL should not include the `/api/v1` prefix.
 func WithAddr(root string) Option {
 	u, err := url.Parse(root)
-	return func(s *httpClient) error {
+	return func(s *HTTP) error {
 		if err != nil {
 			return err
 		}
@@ -74,7 +114,7 @@ func WithAddr(root string) Option {
 //
 // If WithClient is not supplied to NewHTTP, http.DefaultClient is used.
 func WithClient(c *http.Client) Option {
-	return func(s *httpClient) error {
+	return func(s *HTTP) error {
 		s.c = c
 		return nil
 	}

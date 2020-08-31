@@ -18,14 +18,14 @@ WORKDIR /build/
 ADD . /build/
 ARG CLAIR_VERSION=dev
 RUN go build \
-	-mod=vendor \
+	`test -d vendor && echo -mod=vendor` \
 	-ldflags="-X main.Version=${CLAIR_VERSION}" \
 	./cmd/clair
 RUN go build \
-	-mod=vendor \
+	`test -d vendor && echo -mod=vendor` \
 	./cmd/clairctl
 
-FROM docker.io/library/alpine:3.10 AS final
+FROM docker.io/library/alpine:3.11 AS final
 RUN apk add --no-cache tar rpm ca-certificates dumb-init
 # change ownership of ssl directory to allow custom cert in OpenShift
 RUN chgrp -R 0 /etc/ssl/certs && \
