@@ -4,8 +4,6 @@ type RemoteMatcher struct {
 	// A remote service connection string.
 	//
 	// Formats:
-	// url: "postgres://pqgotest:password@localhost/pqgotest?sslmode=verify-full"
-	// or
-	// string: "user=pqgotest dbname=pqgotest sslmode=verify-full"
+	// url: "postgres://pqgotest:password@localhost/pqgotest? key: "dfdsjfdslfjdslkfjldsfk"
 	Params string `yaml:"params" json:"params"`
 }

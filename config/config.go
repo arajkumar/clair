@@ -51,14 +51,15 @@ type Config struct {
 	// "error"
 	// "fatal"
 	// "panic"
-	LogLevel string   `yaml:"log_level" json:"log_level"`
-	Indexer  Indexer  `yaml:"indexer" json:"indexer"`
-	Matcher  Matcher  `yaml:"matcher" json:"matcher"`
-	Notifier Notifier `yaml:"notifier" json:"notifier"`
-	Auth     Auth     `yaml:"auth" json:"auth"`
-	Trace    Trace    `yaml:"trace" json:"trace"`
-	Metrics  Metrics  `yaml:"metrics" json:"metrics"`
-	Updaters Updaters `yaml:"updaters" json:"updaters"`
+	LogLevel      string          `yaml:"log_level" json:"log_level"`
+	Indexer       Indexer         `yaml:"indexer" json:"indexer"`
+	Matcher       Matcher         `yaml:"matcher" json:"matcher"`
+	Notifier      Notifier        `yaml:"notifier" json:"notifier"`
+	Auth          Auth            `yaml:"auth" json:"auth"`
+	Trace         Trace           `yaml:"trace" json:"trace"`
+	Metrics       Metrics         `yaml:"metrics" json:"metrics"`
+	Updaters      Updaters        `yaml:"updaters" json:"updaters"`
+	RemoteMatcher []RemoteMatcher `yaml:"remote_matcher" json:"remote_matcher"`
 }
 
 // Updaters configures updater behavior.

@@ -76,6 +76,7 @@ func (i *Init) Services() error {
 			UpdaterSets:    i.conf.Updaters.Sets,
 			UpdateInterval: per,
 			UpdaterConfigs: updaterConfigs,
+			//RemoteMatcher:  i.conf.RemoteMatcher,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to initialize libvuln: %v", err)
