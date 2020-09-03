@@ -9,6 +9,6 @@ type RemoteMatcher struct {
 	// A remote service connection string.
 	//
 	// Formats:
-	// url: "postgres://pqgotest:password@localhost/pqgotest? key: "dfdsjfdslfjdslkfjldsfk"
+	// url: "host=https://foo.com premiumKey=abced1234"
 	Params string `yaml:"params" json:"params"`
 }
