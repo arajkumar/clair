@@ -1,14 +1,11 @@
 package config
 
-type RemoteMatchers struct {
-	// A remote service
-	RemoteMatchers []MatcherObject
-}
-type MatcherObject struct {
-	Name   string
-	Params MatcherParams
-}
-type MatcherParams struct {
+//type RemoteMatcher struct {
+// A remote service
+//RemoteMatchers []RemoteMatchers
+//}
+
+type RemoteMatcher struct {
 	// A remote service connection string.
 	//
 	// Formats:
