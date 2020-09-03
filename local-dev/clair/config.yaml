@@ -14,7 +14,8 @@ matcher:
   max_conn_pool: 100
   migrations: true
 remote_matcher:
-  params: url=https://someurl key=somekey
+  - crda:
+       params: url=https://someurl key=somekey
 notifier:
   indexer_addr: http://clair-traefik:6060/
   matcher_addr: http://clair-traefik:6060/
