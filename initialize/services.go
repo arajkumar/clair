@@ -70,15 +70,15 @@ func (i *Init) Services() error {
 			updaterConfigs[name] = node.Decode
 		}
 		log.Info().Msg("..............................................................................................")
-		fmt.Println(i.conf.RemoteMatcher.Params)
+		//fmt.Println(i.conf.RemoteMatcher.MatcherParam.Params)
 		libV, err := libvuln.New(i.GlobalCTX, &libvuln.Opts{
-			MaxConnPool:         int32(i.conf.Matcher.MaxConnPool),
-			ConnString:          i.conf.Matcher.ConnString,
-			Migrations:          i.conf.Matcher.Migrations,
-			UpdaterSets:         i.conf.Updaters.Sets,
-			UpdateInterval:      per,
-			UpdaterConfigs:      updaterConfigs,
-			RemoteMatcherParams: i.conf.RemoteMatcher.Params,
+			MaxConnPool:    int32(i.conf.Matcher.MaxConnPool),
+			ConnString:     i.conf.Matcher.ConnString,
+			Migrations:     i.conf.Matcher.Migrations,
+			UpdaterSets:    i.conf.Updaters.Sets,
+			UpdateInterval: per,
+			UpdaterConfigs: updaterConfigs,
+			RemoteMatchers: i.conf.RemoteMatchers,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to initialize libvuln: %v", err)

@@ -13,9 +13,11 @@ matcher:
   connstring: host=clair-db port=5432 user=clair dbname=clair sslmode=disable
   max_conn_pool: 100
   migrations: true
-remote_matcher:
-  - crda:
-       params: url=https://someurl key=somekey
+remote_matchers:
+  - name: crda
+    params: url=https://someurl key=somekey
+  - name: someother
+    params: url=https://someurl key=somekey
 notifier:
   indexer_addr: http://clair-traefik:6060/
   matcher_addr: http://clair-traefik:6060/
