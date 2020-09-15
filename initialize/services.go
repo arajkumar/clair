@@ -69,14 +69,23 @@ func (i *Init) Services() error {
 		for name, node := range i.conf.Updaters.Config {
 			updaterConfigs[name] = node.Decode
 		}
+		//matcherConfig take configuration for matcher
+		//matcherSet extracts names of matchers and stores them in an array of strings
+		matcherConfigs := make(map[string]driver.ConfigUnmarshaler)
+		matcherSet := make([]string, 0)
+		for name, node := range i.conf.RemoteMatchers.Config {
+			matcherConfigs[name] = node.Decode
+			matcherSet = append(matcherSet, name)
+		}
 		libV, err := libvuln.New(i.GlobalCTX, &libvuln.Opts{
-			MaxConnPool:    int32(i.conf.Matcher.MaxConnPool),
-			ConnString:     i.conf.Matcher.ConnString,
-			Migrations:     i.conf.Matcher.Migrations,
-			UpdaterSets:    i.conf.Updaters.Sets,
-			UpdateInterval: per,
-			UpdaterConfigs: updaterConfigs,
-			RemoteMatchers: i.conf.RemoteMatchers,
+			MaxConnPool:          int32(i.conf.Matcher.MaxConnPool),
+			ConnString:           i.conf.Matcher.ConnString,
+			Migrations:           i.conf.Matcher.Migrations,
+			UpdaterSets:          i.conf.Updaters.Sets,
+			UpdateInterval:       per,
+			UpdaterConfigs:       updaterConfigs,
+			RemoteMatcherSets:    matcherSet,
+			RemoteMatcherConfigs: matcherConfigs,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to initialize libvuln: %v", err)
