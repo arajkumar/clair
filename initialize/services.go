@@ -69,8 +69,6 @@ func (i *Init) Services() error {
 		for name, node := range i.conf.Updaters.Config {
 			updaterConfigs[name] = node.Decode
 		}
-		//matcherConfig take configuration for matcher
-		//matcherSet extracts names of matchers and stores them in an array of strings
 		matcherConfigs := make(map[string]driver.ConfigUnmarshaler)
 		matcherSet := make([]string, 0)
 		for name, node := range i.conf.RemoteMatchers.Config {
