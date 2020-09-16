@@ -91,7 +91,7 @@ type Updaters struct {
 	Filter string `yaml:"filter" json:"filter"`
 }
 
-//RemoteMatchers configures RemoteMatcher behaviour
+// RemoteMatchers configures RemoteMatcher behaviour
 type RemoteMatchers struct {
 	// Config holds configuration blocks for MatcherFactories and Matchers,
 	// keyed by name.
