@@ -93,6 +93,8 @@ type Updaters struct {
 
 //RemoteMatchers configures RemoteMatcher behaviour
 type RemoteMatchers struct {
+	// Sets of RemoteMatchers to be used
+	Sets []string `yaml:"sets" json:"sets"`
 	// Config holds configuration blocks for MatcherFactories and Matchers,
 	// keyed by name.
 	Config map[string]yaml.Node `yaml:"config" json:"config"`

@@ -70,12 +70,9 @@ func (i *Init) Services() error {
 			updaterConfigs[name] = node.Decode
 		}
 		//matcherConfig take configuration for matcher
-		//matcherSet extracts names of matchers and stores them in an array of strings
-		matcherConfigs := make(map[string]driver.ConfigUnmarshaler)
-		matcherSet := make([]string, 0)
+		matcherConfigs := make(map[string]driver.MatcherConfigUnmarshaler)
 		for name, node := range i.conf.RemoteMatchers.Config {
 			matcherConfigs[name] = node.Decode
-			matcherSet = append(matcherSet, name)
 		}
 		libV, err := libvuln.New(i.GlobalCTX, &libvuln.Opts{
 			MaxConnPool:          int32(i.conf.Matcher.MaxConnPool),
@@ -84,7 +81,7 @@ func (i *Init) Services() error {
 			UpdaterSets:          i.conf.Updaters.Sets,
 			UpdateInterval:       per,
 			UpdaterConfigs:       updaterConfigs,
-			RemoteMatcherSets:    matcherSet,
+			RemoteMatcherSets:    i.conf.RemoteMatchers.Sets,
 			RemoteMatcherConfigs: matcherConfigs,
 		})
 		if err != nil {
