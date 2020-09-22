@@ -2,7 +2,10 @@
 log_level: debug-color
 introspection_addr: ""
 http_listen_addr: ":6000"
-updaters: {}
+updaters:
+  sets:
+    - rhel
+    - alpine
 indexer:
   connstring: host=clair-db port=5432 user=clair dbname=clair sslmode=disable
   scanlock_retry: 10
@@ -16,9 +19,10 @@ matcher:
 remote_matchers:
   sets:
     - crda
+    - abc
   config:
     crda:
-      params: "url=https://f8a-analytics-preview-2445582058137.production.gw.apicast.io/?user_key=3e42fa66f65124e6b1266a23431e3d08 ecosystem=pypi"
+      url: https://f8a-analytics-preview-2445582058137.production.gw.apicast.io/?user_key=3e42fa66f65124e6b1266a23431e3d08 ecosystem=pypi
 notifier:
   indexer_addr: http://clair-traefik:6060/
   matcher_addr: http://clair-traefik:6060/
