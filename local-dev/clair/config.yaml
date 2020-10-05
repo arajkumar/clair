@@ -2,7 +2,10 @@
 log_level: debug-color
 introspection_addr: ""
 http_listen_addr: ":6000"
-updaters: {}
+updaters:
+  sets:
+    - rhel
+    - alpine
 indexer:
   connstring: host=clair-db port=5432 user=clair dbname=clair sslmode=disable
   scanlock_retry: 10
