@@ -51,14 +51,15 @@ type Config struct {
 	// "error"
 	// "fatal"
 	// "panic"
-	LogLevel string   `yaml:"log_level" json:"log_level"`
-	Indexer  Indexer  `yaml:"indexer" json:"indexer"`
-	Matcher  Matcher  `yaml:"matcher" json:"matcher"`
-	Notifier Notifier `yaml:"notifier" json:"notifier"`
-	Auth     Auth     `yaml:"auth" json:"auth"`
-	Trace    Trace    `yaml:"trace" json:"trace"`
-	Metrics  Metrics  `yaml:"metrics" json:"metrics"`
-	Updaters Updaters `yaml:"updaters" json:"updaters"`
+	LogLevel       string         `yaml:"log_level" json:"log_level"`
+	Indexer        Indexer        `yaml:"indexer" json:"indexer"`
+	Matcher        Matcher        `yaml:"matcher" json:"matcher"`
+	Notifier       Notifier       `yaml:"notifier" json:"notifier"`
+	Auth           Auth           `yaml:"auth" json:"auth"`
+	Trace          Trace          `yaml:"trace" json:"trace"`
+	Metrics        Metrics        `yaml:"metrics" json:"metrics"`
+	Updaters       Updaters       `yaml:"updaters" json:"updaters"`
+	RemoteMatchers RemoteMatchers `yaml:"remote_matchers" json:"remote_matchers"`
 }
 
 // Updaters configures updater behavior.
@@ -88,6 +89,14 @@ type Updaters struct {
 	// Filter is a regexp that disallows updaters that do not match from
 	// running.
 	Filter string `yaml:"filter" json:"filter"`
+}
+
+// RemoteMatchers configures RemoteMatcher behaviour
+type RemoteMatchers struct {
+	Sets []string `yaml:"sets" json:"sets"`
+	// Config holds configuration blocks for MatcherFactories and Matchers,
+	// keyed by name.
+	Config map[string]yaml.Node `yaml:"config" json:"config"`
 }
 
 func (u *Updaters) FilterSets(m map[string]driver.UpdaterSetFactory) {
