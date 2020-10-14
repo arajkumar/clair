@@ -32,4 +32,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200506231410-2ff61e1afc86
 )
 
-replace github.com/quay/claircore => github.com/arajkumar/claircore v0.0.18-0.20200930024111-54e4255444f0
+replace github.com/quay/claircore => github.com/arajkumar/claircore v0.0.18-0.20201014065307-af5a404fdec3
