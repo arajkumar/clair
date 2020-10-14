@@ -4,21 +4,26 @@ import (
 	"fmt"
 	"time"
 
-	notifier "github.com/quay/clair/v4/notifier/service"
 	"github.com/quay/claircore/libindex"
 	"github.com/quay/claircore/libvuln"
 	"github.com/quay/claircore/libvuln/driver"
 	"github.com/rs/zerolog"
+	"gopkg.in/square/go-jose.v2/jwt"
 
 	clairerror "github.com/quay/clair/v4/clair-error"
 	"github.com/quay/clair/v4/config"
+	"github.com/quay/clair/v4/httptransport"
 	"github.com/quay/clair/v4/httptransport/client"
+	notifier "github.com/quay/clair/v4/notifier/service"
 )
 
 const (
 	// DefaultUpdatePeriod is the default period used for running updaters
 	// within matcher processes.
 	DefaultUpdatePeriod = 30 * time.Minute
+	// NotifierIssuer is the value used for the issuer claim of any outgoing
+	// HTTP requests the notifier makes, if PSK auth is configured.
+	NotifierIssuer = `clair-notifier`
 )
 
 // Services will initialize the correct ClairCore services
@@ -94,12 +99,17 @@ func (i *Init) Services() error {
 				Msg: "notifier: failed to parse poll interval: " + err.Error(),
 			}
 		}
+		c, _, err := i.conf.Client(nil, notifierClaim)
+		if err != nil {
+			return err
+		}
 
 		n, err := notifier.New(i.GlobalCTX, notifier.Opts{
 			DeliveryInterval: dInterval,
 			ConnString:       i.conf.Notifier.ConnString,
 			Indexer:          libI,
 			Matcher:          libV,
+			Client:           c,
 			Migrations:       i.conf.Notifier.Migrations,
 			PollInterval:     pInterval,
 			Webhook:          i.conf.Notifier.Webhook,
@@ -170,7 +180,7 @@ func (i *Init) Services() error {
 			return fmt.Errorf("failed to initialize libvuln: %v", err)
 		}
 		// matcher mode needs a remote indexer client
-		c, auth, err := i.conf.Client(nil)
+		c, auth, err := i.conf.Client(nil, intraserviceClaim)
 		switch {
 		case err != nil:
 			return err
@@ -190,7 +200,7 @@ func (i *Init) Services() error {
 		i.Matcher = libV
 	case config.NotifierMode:
 		// notifier uses a remote indexer and matcher
-		c, auth, err := i.conf.Client(nil)
+		c, auth, err := i.conf.Client(nil, intraserviceClaim)
 		switch {
 		case err != nil:
 			return err
@@ -227,12 +237,17 @@ func (i *Init) Services() error {
 				Msg: "notifier: failed to parse poll interval: " + err.Error(),
 			}
 		}
+		c, _, err = i.conf.Client(nil, notifierClaim)
+		if err != nil {
+			return err
+		}
 
 		n, err := notifier.New(i.GlobalCTX, notifier.Opts{
 			DeliveryInterval: dInterval,
 			ConnString:       i.conf.Notifier.ConnString,
 			Indexer:          remoteIndexer,
 			Matcher:          remoteMatcher,
+			Client:           c,
 			Migrations:       i.conf.Notifier.Migrations,
 			PollInterval:     pInterval,
 			Webhook:          i.conf.Notifier.Webhook,
@@ -254,3 +269,8 @@ func (i *Init) Services() error {
 
 	return nil
 }
+
+var (
+	intraserviceClaim = jwt.Claims{Issuer: httptransport.IntraserviceIssuer}
+	notifierClaim     = jwt.Claims{Issuer: NotifierIssuer}
+)

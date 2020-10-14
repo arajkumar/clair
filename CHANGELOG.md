@@ -2,8 +2,94 @@
 ## [Unreleased]
 
 
+<a name="v4.0.0-rc.16"></a>
+## [v4.0.0-rc.16] - 2020-10-09
+### Cicd
+- [96909bf](https://github.com/quay/clair/commit/96909bf3bfca47c8ea1ce0b53d9d5b7e9897b55e): exclude darwin/arm64
+- [7786d7d](https://github.com/quay/clair/commit/7786d7d34b01b48f9d2d87682faa54936c25a21f): more debugging
+- [89c26ec](https://github.com/quay/clair/commit/89c26ec55443050d2e3dd425b4e37a15fe96c061): more debugging
+- [7a1eeaf](https://github.com/quay/clair/commit/7a1eeafd0bebc261f356f05244c3a946bfee8c87): make sure the workspace exists
+- [68c0318](https://github.com/quay/clair/commit/68c0318b1b225387402a3d4e66c1803f64fd1d98): make empty changelog on manual trigger
+- [4e5ee29](https://github.com/quay/clair/commit/4e5ee2908d49191f54951cc276cf95387f90b83c): rig up a workflow_dispatch to help debugging
+
+<a name="v4.0.0-rc.15"></a>
+## [v4.0.0-rc.15] - 2020-10-09
+### Chore
+- [8d87481](https://github.com/quay/clair/commit/8d87481b80e495c52c8677eae2db1e288576dcb1): v4.0.0-rc.15 changelog bump
+### Cicd
+- [d758248](https://github.com/quay/clair/commit/d758248755fe18f4658eee93cc5d40dc2b206c06): maybe there's some newline issues
+
+<a name="v4.0.0-rc.14"></a>
+## [v4.0.0-rc.14] - 2020-10-09
+### Chore
+- [e46b4f8](https://github.com/quay/clair/commit/e46b4f89aa2a4a13062c2dd4726b66d476ef8b24): v4.0.0-rc.14 changelog bump
+### Cicd
+- [58a987d](https://github.com/quay/clair/commit/58a987d6078506357933b378c299576bf15e39c8): invalid goos+goarch pair
+
+<a name="v4.0.0-rc.13"></a>
+## [v4.0.0-rc.13] - 2020-10-09
+### Chore
+- [6326327](https://github.com/quay/clair/commit/63263273a7440cb93fcd044a33ad2d0b5a70f425): v4.0.0-rc.13 changelog bump
+### Cicd
+- [f6a28c2](https://github.com/quay/clair/commit/f6a28c2dcc252b4e8be08158a227b8fed7b71b27): fix goos/goarch
+
+<a name="v4.0.0-rc.12"></a>
+## [v4.0.0-rc.12] - 2020-10-08
+### Chore
+- [61ce675](https://github.com/quay/clair/commit/61ce675946bd186f5a0be800ab26cad3f008a0f1): v4.0.0-rc.12 changelog bump
+### Cicd
+- [28dcd94](https://github.com/quay/clair/commit/28dcd9443f95c4243a94896b04ff7b3075a1c21c): parallelize release process, keep test failures
+### Clairctl
+- [b1fee08](https://github.com/quay/clair/commit/b1fee08e43401fdbe6fd9af222bbe64b6412c773): update some interactive help
+### Go.Mod
+- [af868db](https://github.com/quay/clair/commit/af868db100705074f718f1a8f7caaafaa8b88220): update dependencies
+### Local-Dev
+- [3b60292](https://github.com/quay/clair/commit/3b60292591900173f4eda02461d3891e48d070c2): make quay container ignore validations
+### Notifier
+- [0c1554e](https://github.com/quay/clair/commit/0c1554e9aa6cb8d1116376bf303c8af8e5112b23): ensure Content-Type header present in webhook notification
+- [a2d5f9b](https://github.com/quay/clair/commit/a2d5f9b92371094ade82b8f9bef19d72fb8addcd): copy url struct
+### Pull Requests
+- Merge pull request [#1086](https://github.com/quay/clair/issues/1086) from alecmerdler/webhook-notifier-headers
+
+
+<a name="v4.0.0-rc.11"></a>
+## [v4.0.0-rc.11] - 2020-10-02
+### Chore
+- [f9f8635](https://github.com/quay/clair/commit/f9f86350521ed9c02258c713a992d76976fab9cc): v4.0.0-rc.11 changelog bump
+### Config
+- [a4e0410](https://github.com/quay/clair/commit/a4e04105cb15173ee3b06090de7573540969a89c): allow HTTP client to specify claims
+- [5aba727](https://github.com/quay/clair/commit/5aba72783bff70fa41769cbe33365a34835bd73f): ensure yaml/json struct tag for auth 'Issuer' field are the same
+### Notifier
+- [57e1ed0](https://github.com/quay/clair/commit/57e1ed0a1178ca5b980f65e5030a00a82acf52c8): pass configured client into notifier
+### Pull Requests
+- Merge pull request [#1078](https://github.com/quay/clair/issues/1078) from alecmerdler/fix-issuer-struct-tag
+
+
+<a name="v4.0.0-rc.10"></a>
+## [v4.0.0-rc.10] - 2020-10-01
+### Chore
+- [2c54a82](https://github.com/quay/clair/commit/2c54a82467af83db44b9dcccdfb73a320699426b): v4.0.0-rc.10 changelog bump
+### Cicd
+- [f04bc76](https://github.com/quay/clair/commit/f04bc76c666b3d1c5098dcc14b928a165066549a): api reference check
+### Docs
+- [0d8a2a4](https://github.com/quay/clair/commit/0d8a2a4aae8358597e3b67cbf4deb8be79e76dec): bump api reference
+### Go.Mod
+- [bd1a3b7](https://github.com/quay/clair/commit/bd1a3b772c2dbd6ae87a94c5608f1cdc2bf0044a): update claircore version
+### Httptransport
+- [2c9762b](https://github.com/quay/clair/commit/2c9762b0351449b5b09249da513178b3d2757985): remove redundant method check
+### Openapi
+- [015d862](https://github.com/quay/clair/commit/015d862dce63068951d145c5512ec95977262a03): yamllint and spellcheck
+- [d06dabf](https://github.com/quay/clair/commit/d06dabfe57fbb90ba376e8f1fa81d18db90ed070): change OperationIDs for notification endpoints
+
+<a name="v4.0.0-rc.9"></a>
+## [v4.0.0-rc.9] - 2020-09-29
+### Cicd
+- [04fab4a](https://github.com/quay/clair/commit/04fab4a7ef9344ee5e3578c60873a5e56bff64b7): build container with local checkout
+
 <a name="v4.0.0-rc.8"></a>
 ## [v4.0.0-rc.8] - 2020-09-29
+### Chore
+- [6181cc6](https://github.com/quay/clair/commit/6181cc6c7a47203482f420ccd257318a0d478978): v4.0.0-rc.8 changelog bump
 ### Cicd
 - [7520b09](https://github.com/quay/clair/commit/7520b0912967a0811660ead8e35f80d85899c000): fix container building
 
@@ -1154,7 +1240,15 @@
 - Merge pull request [#4](https://github.com/quay/clair/issues/4) from Quentin-M/reduce_tx
 
 
-[Unreleased]: https://github.com/quay/clair/compare/v4.0.0-rc.8...HEAD
+[Unreleased]: https://github.com/quay/clair/compare/v4.0.0-rc.16...HEAD
+[v4.0.0-rc.16]: https://github.com/quay/clair/compare/v4.0.0-rc.15...v4.0.0-rc.16
+[v4.0.0-rc.15]: https://github.com/quay/clair/compare/v4.0.0-rc.14...v4.0.0-rc.15
+[v4.0.0-rc.14]: https://github.com/quay/clair/compare/v4.0.0-rc.13...v4.0.0-rc.14
+[v4.0.0-rc.13]: https://github.com/quay/clair/compare/v4.0.0-rc.12...v4.0.0-rc.13
+[v4.0.0-rc.12]: https://github.com/quay/clair/compare/v4.0.0-rc.11...v4.0.0-rc.12
+[v4.0.0-rc.11]: https://github.com/quay/clair/compare/v4.0.0-rc.10...v4.0.0-rc.11
+[v4.0.0-rc.10]: https://github.com/quay/clair/compare/v4.0.0-rc.9...v4.0.0-rc.10
+[v4.0.0-rc.9]: https://github.com/quay/clair/compare/v4.0.0-rc.8...v4.0.0-rc.9
 [v4.0.0-rc.8]: https://github.com/quay/clair/compare/v4.0.0-rc.7...v4.0.0-rc.8
 [v4.0.0-rc.7]: https://github.com/quay/clair/compare/v4.0.0-rc.6...v4.0.0-rc.7
 [v4.0.0-rc.6]: https://github.com/quay/clair/compare/v4.0.0-rc.5...v4.0.0-rc.6

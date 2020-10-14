@@ -19,15 +19,16 @@ import (
 // ReportCmd is the "report" subcommand.
 var ReportCmd = &cli.Command{
 	Name:        "report",
-	Description: "Request and print a Clair vulnerability report for the provided container(s).",
+	Description: "Request and print a Clair vulnerability report for the named container(s).",
 	Action:      reportAction,
 	Usage:       "request vulnerability reports for the named containers",
 	ArgsUsage:   "container...",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:  "host",
-			Usage: "URL for the clairv4 v1 API.",
-			Value: "http://localhost:6060/",
+			Name:    "host",
+			Usage:   "URL for the clairv4 v1 API.",
+			Value:   "http://localhost:6060/",
+			EnvVars: []string{"CLAIR_API"},
 		},
 		&cli.GenericFlag{
 			Name:        "out",
