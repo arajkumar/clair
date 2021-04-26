@@ -38,3 +38,5 @@ require (
 	gopkg.in/square/go-jose.v2 v2.4.1
 	gopkg.in/yaml.v3 v3.0.0-20200506231410-2ff61e1afc86
 )
+
+replace github.com/quay/claircore => github.com/hdonnay/claircore v0.0.13-0.20210423205042-def957b472e5
